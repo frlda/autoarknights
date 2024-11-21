@@ -8,25 +8,22 @@ from PIL import Image, ImageDraw, ImageFont
 from typing import Tuple
 from pathlib import Path
 
-# 注册帮助命令
 help_handler = on_command("方舟help", aliases={"help"}, priority=5, block=True)
 
 class HelpImageGenerator:
     def __init__(self):
-        # 设置资源目录
-        self.base_dir = Path(__file__).parent
+        self.base_dir = Path(__file__).parent.absolute()
         self.assets_dir = self.base_dir / "assets"
         self.cache_dir = self.assets_dir / "cache"
         self.fonts_dir = self.assets_dir / "fonts"
         
-        # 确保目录存在
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        if os.name != 'nt':  # 如果不是Windows系统
+            os.chmod(str(self.cache_dir), 0o755)
         
-        # 图片缓存路径
         self.normal_cache = self.cache_dir / "help_normal.png"
         self.admin_cache = self.cache_dir / "help_admin.png"
 
-        # 设置字体和颜色
         self.font_path = str(self.fonts_dir / "SarasaMonoSC-Regular.ttf")
         
         try:
@@ -38,14 +35,12 @@ class HelpImageGenerator:
             logger.error(f"Failed to load font: {str(e)}")
             raise
         
-        # 颜色配置
-        self.background_color = (255, 255, 255)  # 白色背景
-        self.title_color = (51, 51, 51)  # 深灰色标题
-        self.header_color = (64, 158, 255)  # 蓝色标题
-        self.text_color = (102, 102, 102)  # 灰色文本
+        self.background_color = (255, 255, 255)
+        self.title_color = (51, 51, 51)
+        self.header_color = (64, 158, 255)
+        self.text_color = (102, 102, 102)
 
     def get_help_content(self, is_admin: bool = False) -> dict:
-        """获取帮助内容"""
         content = {
             "title": "明日方舟速通助手",
             "sections": {
@@ -87,7 +82,6 @@ class HelpImageGenerator:
                     "4. 设置关卡示例:",
                     "   /账号设置 1 作战关卡 jm hd-9",
                     "   (将账号1的刷取关卡设置为剿灭和活动第九关，一定要设置关卡)",
-
                 ],
                 "注意事项": [
                     "1. 自己把账号冻结后将从下一(8h)周期暂停所有自动操作",
@@ -112,42 +106,34 @@ class HelpImageGenerator:
                 ]
             })
         
-        return content  
+        return content
 
     def get_text_size(self, text: str, font: ImageFont.FreeTypeFont) -> Tuple[int, int]:
-        """获取文本尺寸"""
         left, top, right, bottom = font.getbbox(text)
         return (int(right - left), int(bottom - top))
 
     def create_help_image(self, content: dict) -> Image.Image:
-        """生成帮助图片"""
-        # 计算图片尺寸
         padding = 40
         line_spacing = 10
         section_spacing = 30
         
-        # 计算总高度
-        height = padding * 2  # 上下padding
-        height += self.get_text_size(content["title"], self.title_font)[1]  # 标题高度
-        height += section_spacing  # 标题和内容的间距
+        height = padding * 2
+        height += self.get_text_size(content["title"], self.title_font)[1]
+        height += section_spacing
         
-        # 预设宽度
         max_width = 800
         
-        # 计算每个部分的高度
         for section, lines in content["sections"].items():
-            height += self.get_text_size(section, self.header_font)[1]  # 段落标题高度
+            height += self.get_text_size(section, self.header_font)[1]
             height += line_spacing
             for line in lines:
                 height += self.get_text_size(line, self.content_font)[1]
                 height += line_spacing
             height += section_spacing
 
-        # 创建图片
         img = Image.new('RGB', (max_width, height), self.background_color)
         draw = ImageDraw.Draw(img)
 
-        # 绘制标题
         title_size = self.get_text_size(content["title"], self.title_font)
         title_x = (max_width - title_size[0]) // 2
         current_y = padding
@@ -155,14 +141,11 @@ class HelpImageGenerator:
                  font=self.title_font, fill=self.title_color)
         current_y += title_size[1] + section_spacing
 
-        # 绘制各个部分
         for section, lines in content["sections"].items():
-            # 绘制段落标题
             draw.text((padding, current_y), f"【{section}】", 
                      font=self.header_font, fill=self.header_color)
             current_y += self.get_text_size(section, self.header_font)[1] + line_spacing
 
-            # 绘制内容
             for line in lines:
                 draw.text((padding + 20, current_y), line, 
                          font=self.content_font, fill=self.text_color)
@@ -172,32 +155,27 @@ class HelpImageGenerator:
         return img
 
     def get_help_image(self, is_admin: bool = False) -> str:
-        """获取帮助图片路径，如果需要则重新生成"""
         content = self.get_help_content(is_admin)
         cache_file = self.admin_cache if is_admin else self.normal_cache
         
-        # 生成新图片
         try:
             help_image = self.create_help_image(content)
             help_image.save(str(cache_file))
+            if os.name != 'nt':  # 如果不是Windows系统
+                os.chmod(str(cache_file), 0o644)
             return str(cache_file)
         except Exception as e:
             logger.error(f"Failed to generate help image: {str(e)}")
             raise
 
-
 @help_handler.handle()
 async def handle_help(event: MessageEvent) -> None:
-    """处理帮助命令"""
     try:
-        # 检查是否为管理员
         bot = get_bot()
         is_admin = str(event.get_user_id()) in bot.config.superusers
         
-        # 获取帮助图片
         help_generator = HelpImageGenerator()
         
-        # 清理旧的缓存文件
         cache_file = help_generator.admin_cache if is_admin else help_generator.normal_cache
         if os.path.exists(str(cache_file)):
             try:
@@ -206,24 +184,29 @@ async def handle_help(event: MessageEvent) -> None:
             except Exception as e:
                 logger.warning(f"Failed to remove cache file: {e}")
         
-        # 生成新的帮助图片
         image_path = help_generator.get_help_image(is_admin)
         
-        # 确保图片存在
         if not os.path.exists(image_path):
             logger.error(f"Help image not found at {image_path}")
             await help_handler.send("生成帮助图片失败，请联系管理员。")
             return
             
-        # 转换为绝对路径
-        abs_path = os.path.abspath(image_path)
-        logger.info(f"Sending help image from: {abs_path}")
-
-        # 发送图片并结束
-        await help_handler.send(MessageSegment.image(file=f"file:///{abs_path}"))
+        # 获取相对路径
+        relative_path = str(Path(image_path).resolve())
+        
+        try:
+            # 首先尝试使用file协议
+            await help_handler.send(MessageSegment.image(file=f"file://{relative_path}"))
+        except Exception as first_error:
+            logger.error(f"Failed to send image with file protocol: {first_error}")
+            try:
+                # 如果失败，尝试直接使用路径
+                await help_handler.send(MessageSegment.image(file=relative_path))
+            except Exception as second_error:
+                logger.error(f"Failed to send image with direct path: {second_error}")
+                await help_handler.send("图片发送失败，请联系管理员")
         
     except FinishedException:
-        # 忽略 FinishedException
         pass
     except Exception as e:
         logger.error(f"Error in help command: {e}")

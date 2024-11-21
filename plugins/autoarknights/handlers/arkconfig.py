@@ -13,16 +13,15 @@ from ..database import get_session, ArkAccount, ArkConfig
 
 class ConfigImageGenerator:
     def __init__(self):
-        # 设置资源目录
-        self.base_dir = Path(__file__).parent
+        self.base_dir = Path(__file__).parent.absolute()
         self.assets_dir = self.base_dir / "assets"
         self.cache_dir = self.assets_dir / "cache"
         self.fonts_dir = self.assets_dir / "fonts"
         
-        # 确保目录存在
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 设置字体
+        if os.name != 'nt':  # 如果不是Windows系统
+            os.chmod(str(self.cache_dir), 0o755)
+
         self.font_path = str(self.fonts_dir / "SarasaMonoSC-Regular.ttf")
         try:
             self.title_font = ImageFont.truetype(self.font_path, 32)
@@ -32,34 +31,28 @@ class ConfigImageGenerator:
             logger.error(f"Failed to load font: {str(e)}")
             raise
         
-        # 颜色配置
-        self.background_color = (255, 255, 255)      # 白色背景
-        self.title_color = (51, 51, 51)             # 深灰色标题
-        self.header_color = (64, 158, 255)          # 蓝色标题
-        self.text_color = (102, 102, 102)           # 灰色文本
-        self.checkbox_color = (0, 122, 255)         # 蓝色复选框
-        self.checkbox_bg = (240, 240, 240)          # 灰色复选框背景
+        self.background_color = (255, 255, 255)
+        self.title_color = (51, 51, 51)
+        self.header_color = (64, 158, 255)
+        self.text_color = (102, 102, 102)
+        self.checkbox_color = (0, 122, 255)
+        self.checkbox_bg = (240, 240, 240)
 
     def get_masked_username(self, username: str) -> str:
-        """获取遮罩后的用户名（仅显示前5位）"""
         if len(username) <= 5:
             return username
         return username[:5] + "***"
 
     def draw_checkbox(self, draw: ImageDraw.ImageDraw, x: float, y: float, checked: bool, size: int = 16) -> None:
-        """绘制复选框"""
-        # 确保坐标为整数
         x_int = int(x)
         y_int = int(y)
         
-        # 绘制背景和边框
         draw.rectangle(
             [x_int, y_int, x_int + size, y_int + size],
             fill=self.checkbox_bg,
             outline=self.checkbox_color
         )
         
-        # 如果选中，绘制对勾
         if checked:
             padding = size // 4
             draw.line(
@@ -73,35 +66,27 @@ class ConfigImageGenerator:
             )
 
     def get_text_size(self, text: str, font: ImageFont.FreeTypeFont) -> Tuple[int, int]:
-        """获取文本尺寸"""
         left, top, right, bottom = font.getbbox(text)
         return (int(right - left), int(bottom - top))
 
     def create_config_image(self, account: ArkAccount, config: ArkConfig) -> Image.Image:
-        """生成配置图片"""
-        # 基础设置
-        padding = 30        # 外边距
-        line_spacing = 12   # 行间距
-        section_spacing = 20 # 段间距
-        checkbox_size = 16   # 复选框大小
-        
-        # 预设宽度
-        width = 600         # 减小宽度以获得更好的阅读体验
+        padding = 30
+        line_spacing = 12
+        section_spacing = 20
+        checkbox_size = 16
+        width = 600
 
-        # 创建临时图片(高度先设大一点，后面会裁剪)
         img = Image.new('RGB', (width, 2000), self.background_color)
         draw = ImageDraw.Draw(img)
         
         current_y = padding
 
-        # 绘制标题
         title = f"账号#{account.account_index} 配置信息"
         title_w = self.get_text_size(title, self.title_font)[0]
         draw.text((width//2 - title_w//2, current_y), title, 
                 font=self.title_font, fill=self.title_color)
         current_y += self.title_font.size + section_spacing//2
 
-        # 绘制基本信息
         draw.text((padding, current_y), "【基本信息】", 
                 font=self.header_font, fill=self.header_color)
         current_y += self.header_font.size + line_spacing
@@ -124,7 +109,6 @@ class ConfigImageGenerator:
             
         current_y += section_spacing//2
 
-        # 绘制商店配置
         draw.text((padding, current_y), "【商店配置】", 
                 font=self.header_font, fill=self.header_color)
         current_y += self.header_font.size + line_spacing
@@ -143,7 +127,6 @@ class ConfigImageGenerator:
             
         current_y += section_spacing//2
 
-        # 绘制公招配置
         draw.text((padding, current_y), "【公招配置】", 
                 font=self.header_font, fill=self.header_color)
         current_y += self.header_font.size + line_spacing
@@ -160,11 +143,9 @@ class ConfigImageGenerator:
         recruit_start_y = current_y
         col_width = (width - 2 * padding) // 2
 
-        # 绘制公招配置(3+2布局)
         left_items = recruit_items[:3]
         right_items = recruit_items[3:]
 
-        # 左列
         for i, (label, key) in enumerate(left_items):
             y = recruit_start_y + i * (checkbox_size + line_spacing)
             checked = recruit_config.get(key, True)
@@ -172,7 +153,6 @@ class ConfigImageGenerator:
             draw.text((padding + 15 + checkbox_size + 8, y), 
                     label, font=self.content_font, fill=self.text_color)
 
-        # 右列
         for i, (label, key) in enumerate(right_items):
             y = recruit_start_y + i * (checkbox_size + line_spacing)
             x = padding + 15 + col_width
@@ -181,11 +161,9 @@ class ConfigImageGenerator:
             draw.text((x + checkbox_size + 8, y), 
                     label, font=self.content_font, fill=self.text_color)
 
-        # 更新Y坐标
         current_y = recruit_start_y + (max(len(left_items), len(right_items)) * (checkbox_size + line_spacing))
         current_y += section_spacing//2
 
-        # 绘制任务配置
         draw.text((padding, current_y), "【任务配置】", 
                 font=self.header_font, fill=self.header_color)
         current_y += self.header_font.size + line_spacing
@@ -211,14 +189,11 @@ class ConfigImageGenerator:
         ]
         
         task_start_y = current_y
-        col_width = (width - 2 * padding) // 2
         items_per_col = (len(task_items) + 1) // 2
 
-        # 将任务项分成两列
         left_tasks = task_items[:items_per_col]
         right_tasks = task_items[items_per_col:]
 
-        # 绘制左列任务
         for i, (label, key) in enumerate(left_tasks):
             y = task_start_y + i * (checkbox_size + line_spacing)
             checked = task_config.get(key, True)
@@ -226,7 +201,6 @@ class ConfigImageGenerator:
             draw.text((padding + 15 + checkbox_size + 8, y), 
                     label, font=self.content_font, fill=self.text_color)
 
-        # 绘制右列任务
         for i, (label, key) in enumerate(right_tasks):
             y = task_start_y + i * (checkbox_size + line_spacing)
             x = padding + 15 + col_width
@@ -235,29 +209,26 @@ class ConfigImageGenerator:
             draw.text((x + checkbox_size + 8, y), 
                     label, font=self.content_font, fill=self.text_color)
 
-        # 计算最终需要的高度
         final_height = task_start_y + (max(len(left_tasks), len(right_tasks)) * (checkbox_size + line_spacing))
-        final_height += padding  # 底部留出padding
+        final_height += padding
 
-        # 精确裁剪图片
         img = img.crop((0, 0, width, final_height))
         
         return img
 
     def get_config_image(self, account: ArkAccount, config: ArkConfig) -> str:
-        """获取配置图片路径"""
         cache_file = self.cache_dir / f"config_{account.account_index}_{account.username}.png"
         
         try:
-            # 生成新图片
             config_image = self.create_config_image(account, config)
             config_image.save(str(cache_file))
+            if os.name != 'nt':  # 如果不是Windows系统
+                os.chmod(str(cache_file), 0o644)
             return str(cache_file)
         except Exception as e:
             logger.error(f"Failed to generate config image: {str(e)}")
             raise
 
-# 注册命令
 ark_config = on_regex(r"^账号配置\s*(\d+)$", priority=5)
 
 @ark_config.handle()
@@ -271,7 +242,6 @@ async def handle_config(event: MessageEvent):
 
         account_index = int(match.group(1))
         
-        # 查询账号和配置信息
         with get_session() as session:
             account = session.exec(
                 select(ArkAccount).where(
@@ -295,22 +265,23 @@ async def handle_config(event: MessageEvent):
                 session.add(config)
                 session.commit()
 
-            # 生成配置图片
             image_generator = ConfigImageGenerator()
             image_path = image_generator.get_config_image(account, config)
             
-            # 确保图片存在
             if not os.path.exists(image_path):
                 await ark_config.finish("生成配置图片失败，请联系管理员")
                 return
+
+            relative_path = str(Path(image_path).resolve())
             
-            # 转换为绝对路径
-            abs_path = os.path.abspath(image_path)
+            try:
+                await ark_config.send(MessageSegment.image(file=f"file://{relative_path}"))
+            except Exception as first_error:
+                try:
+                    await ark_config.send(MessageSegment.image(file=relative_path))
+                except Exception as second_error:
+                    await ark_config.send("图片发送失败，请检查文件权限或联系管理员")
             
-            # 发送图片
-            await ark_config.send(MessageSegment.image(file=f"file:///{abs_path}"))
-            
-            # 清理缓存文件
             try:
                 os.remove(image_path)
             except Exception as e:
