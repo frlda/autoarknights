@@ -1,5 +1,6 @@
 import os
 import traceback
+import asyncio
 from nonebot import on_command, get_bot
 from nonebot.adapters.onebot.v11 import MessageEvent, MessageSegment
 from nonebot.log import logger
@@ -161,7 +162,7 @@ class HelpImageGenerator:
         try:
             help_image = self.create_help_image(content)
             help_image.save(str(cache_file))
-            if os.name != 'nt':  # 如果不是Windows系统
+            if os.name != 'nt':
                 os.chmod(str(cache_file), 0o644)
             return str(cache_file)
         except Exception as e:
@@ -180,35 +181,35 @@ async def handle_help(event: MessageEvent) -> None:
         if os.path.exists(str(cache_file)):
             try:
                 os.remove(str(cache_file))
-                logger.info(f"Removed old cache file: {cache_file}")
             except Exception as e:
                 logger.warning(f"Failed to remove cache file: {e}")
         
         image_path = help_generator.get_help_image(is_admin)
         
         if not os.path.exists(image_path):
-            logger.error(f"Help image not found at {image_path}")
             await help_handler.send("生成帮助图片失败，请联系管理员。")
             return
             
-        # 获取相对路径
         relative_path = str(Path(image_path).resolve())
         
         try:
-            # 首先尝试使用file协议
             await help_handler.send(MessageSegment.image(file=f"file://{relative_path}"))
         except Exception as first_error:
-            logger.error(f"Failed to send image with file protocol: {first_error}")
             try:
-                # 如果失败，尝试直接使用路径
                 await help_handler.send(MessageSegment.image(file=relative_path))
             except Exception as second_error:
-                logger.error(f"Failed to send image with direct path: {second_error}")
                 await help_handler.send("图片发送失败，请联系管理员")
+                return
+        
+        await asyncio.sleep(1)
+        try:
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            logger.warning(f"Failed to remove cache file: {e}")
         
     except FinishedException:
         pass
     except Exception as e:
         logger.error(f"Error in help command: {e}")
-        logger.error(f"Stack trace: {traceback.format_exc()}")
         await help_handler.send("获取帮助信息失败，请稍后再试。")

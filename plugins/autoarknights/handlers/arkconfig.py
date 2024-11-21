@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import os
+import asyncio
 from pathlib import Path
 from typing import Tuple
 
@@ -222,7 +223,7 @@ class ConfigImageGenerator:
         try:
             config_image = self.create_config_image(account, config)
             config_image.save(str(cache_file))
-            if os.name != 'nt':  # 如果不是Windows系统
+            if os.name != 'nt':
                 os.chmod(str(cache_file), 0o644)
             return str(cache_file)
         except Exception as e:
@@ -281,9 +282,12 @@ async def handle_config(event: MessageEvent):
                     await ark_config.send(MessageSegment.image(file=relative_path))
                 except Exception as second_error:
                     await ark_config.send("图片发送失败，请检查文件权限或联系管理员")
-            
+                    return
+
+            await asyncio.sleep(1)
             try:
-                os.remove(image_path)
+                if os.path.exists(image_path):
+                    os.remove(image_path)
             except Exception as e:
                 logger.warning(f"Failed to remove cache file: {e}")
 

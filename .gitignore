@@ -20,3 +20,5 @@ plugins/autoarknights/handlers/__pycache__/help.cpython-310.pyc
 plugins/autoarknights/handlers/__pycache__/set_account.cpython-310.pyc
 serial/1/config_multi_account.json
 autoarknights.zip
+plugins/autoarknights/handlers/assets/cache
+
