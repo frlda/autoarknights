@@ -13,24 +13,28 @@
 一个可用的linux客户端？（推荐使用root后的手机直接本地部署例如magisk的proot ubuntu模块，或者直接一机控多个个手机或者模拟器，（除非你要接单呵呵呵呵））一个可用的adb手机受控端，安装了明日方舟和明日方舟速通。
 
 ## 2.下载本仓库
-克隆本仓库，并安装依赖(下载速度慢问题和镜像问题自行解决，)
-        git clone https://github.com/frlda/autoarknights.git
-    	pip install -r requirements.txt
- 
+克隆本仓库，安装依赖(下载速度慢问题和镜像问题自行解决，)
+   ```
+ git clone https://github.com/frlda/autoarknights.git
+ pip install -r requirements.txt
+```
 ## 3.获取onebot无头QQ
   推荐使用lagrange onebot，https://lagrangedev.github.io/Lagrange.Doc/ 
 内存占用小且适合在各种设备部署。部署教程配置这里不做解释，本bot可以单用作插件（应该）也可以直接单走。直接单走的话用的是正向websocket连接，默认6700端口，请自行配置env
 
 ## 4.配置config
-配置位于plugins/autoarknights/cron下的dlt.py，把你的设备adb端口号输进去。
+### 配置位于plugins/autoarknights/cron下的dlt.py，把你的设备adb端口号输进去。
 ![image](https://github.com/user-attachments/assets/c3c713bf-079a-4ddb-b337-7eff6ba3d5a0)
 
-配置位于plugins/autoarknights下的config.py，看需求设置
-配置明日方舟速通，设置好打码的图鉴账号密码，还有qq通知的账号和地址，请参照插件中的qqimage deliver进行图传设置（这个也开放了端口的），然后把明日方舟速通切换到多号模式，启动再关闭（这是为了让速通进入多账号模式能被正常拉起）
+### 配置位于plugins/autoarknights下的config.py，看需求设置
+### 配置明日方舟速通
+设置好打码的图鉴账号密码，还有qq通知的账号和地址，请参照插件中的qqimage deliver进行图传设置（这个也开放了端口的），然后把明日方舟速通切换到多号模式，启动再关闭（这是为了让速通进入多账号模式能被正常拉起）
 
 ## 5.启动
+```
     python bot.py    
 	./Lagrange.OneBot
+```
 请向你登录的bot发送 在吗 进行测试，正常会回复 我在博士
 
 ## 6.使用
