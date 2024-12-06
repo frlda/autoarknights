@@ -14,8 +14,8 @@
 
 ##2.下载本仓库
 克隆本仓库，并安装依赖(下载速度慢问题和镜像问题自行解决，)
-    git clone https://github.com/frlda/autoarknights.git
-	pip install -r requirements.txt
+        git clone https://github.com/frlda/autoarknights.git
+    	pip install -r requirements.txt
  
 ##3.获取onebot无头QQ
   推荐使用lagrange onebot，https://lagrangedev.github.io/Lagrange.Doc/ 
