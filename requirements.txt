@@ -12,8 +12,9 @@ aiohttp
 pillow>=9.0.0
 sqlalchemy>=2.0.0
 asyncio>=3.4.3
-nonebot-plugin-apscheduler>=^0.3.0
+nonebot-plugin-apscheduler>=0.3.0
 nonebot2[websockets]
-sqlmodel-0.0.22
+sqlmodel
 quart
 nonebot-plugin-orm[default]
+nonebot-adapter-onebot
