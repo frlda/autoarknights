@@ -142,7 +142,7 @@ def update_shop_config(config: ArkConfig, key: str, value: str) -> tuple[str, st
 async def handle_setting(event: MessageEvent):
     try:
         msg = str(event.get_message()).strip()
-        match = re.match(r"^/set\s*(\d+)\s+(.+?)(?:\s+(.+))?$", msg)
+        match = re.match(r"^/账号设置\s*(\d+)\s+(.+?)(?:\s+(.+))?$", msg)
         if not match:
             await ark_setting.finish(
                 "命令格式错误！\n"
