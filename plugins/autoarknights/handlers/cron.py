@@ -3,7 +3,8 @@ import nonebot
 from nonebot import on_command, require, get_driver
 from nonebot.log import logger
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.onebot.v11 import Bot, MessageEvent
+from nonebot.adapters.telegram import Bot
+from nonebot.adapters.telegram.event import MessageEvent
 from datetime import datetime
 from sqlmodel import Session, select, distinct
 from typing import List, Set, Optional, Tuple, Union
@@ -47,13 +48,11 @@ class AccountManager:
         try:
             cmd = ["python", str(DLT_PATH), "mode", str(device), "restart"]
             
-            # 如果指定了账号，添加到命令末尾
             if accounts:
                 cmd.append(accounts)
                 
             logger.info(f"Starting fight on device {device} with accounts: {accounts}")
             
-            # 使用异步子进程
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -89,7 +88,6 @@ class AccountManager:
             
             for device in all_devices:
                 try:
-                    # 首先同步数据库配置
                     sync_cmd = [
                         "python", str(DLT_PATH),
                         "mode", str(device),
@@ -135,7 +133,6 @@ class AccountManager:
         try:
             cmd = ["python", str(DLT_PATH), "mode", str(device), "screenshot"]
             
-            # 使用异步子进程
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -167,7 +164,6 @@ for update_time in update_times:
             success, msg = await AccountManager.update_accounts()
             logger.info(f"Scheduled update completed: {msg}")
             
-            # 等待一段时间确保更新完成
             await asyncio.sleep(30)
             
             logger.info(f"Starting fights at {datetime.now()}")
@@ -177,7 +173,6 @@ for update_time in update_times:
                     try:
                         success, msg = await AccountManager.start_fight(dev)
                         logger.info(f"Fight started on device {dev}: {msg}")
-                        # 每个设备启动之间添加间隔，避免并发问题
                         await asyncio.sleep(10)
                     except Exception as e:
                         logger.error(f"Error starting fight on device {dev}: {str(e)}")
@@ -188,16 +183,14 @@ for update_time in update_times:
             return
 
 # 命令处理器
-update_handler = on_command("更新所有账号", permission=SUPERUSER, priority=5)
-fight_handler = on_command("一键战斗", permission=SUPERUSER, priority=5)
-device_handler = on_command("获取设备", permission=SUPERUSER, priority=5)
-screenshot_handler = on_command("获取截图", permission=SUPERUSER, priority=5)
-
-# 通用命令执行处理器
+update_handler = on_command("updateall", aliases={"更新所有账号"}, permission=SUPERUSER, priority=5)
+fight_handler = on_command("fight", aliases={"一键战斗"}, permission=SUPERUSER, priority=5)
+device_handler = on_command("devices", aliases={"获取设备"}, permission=SUPERUSER, priority=5)
+screenshot_handler = on_command("screenshot", aliases={"获取截图"}, permission=SUPERUSER, priority=5)
 command_handler = on_command("exec", permission=SUPERUSER, priority=5)
 
 @device_handler.handle()
-async def handle_devices(bot: Bot, event: MessageEvent) -> None:
+async def handle_devices(event: MessageEvent) -> None:
     """查看当前用户的设备"""
     devices = await AccountManager.get_devices()
     if not devices:
@@ -208,31 +201,24 @@ async def handle_devices(bot: Bot, event: MessageEvent) -> None:
     await device_handler.finish(msg)
 
 @update_handler.handle()
-async def handle_update(bot: Bot, event: MessageEvent) -> None:
+async def handle_update(event: MessageEvent) -> None:
     """处理更新命令"""
     await update_handler.send("开始更新账号信息...")
     success, msg = await AccountManager.update_accounts()
     await update_handler.finish(msg)
 
 @fight_handler.handle()
-async def handle_fight(bot: Bot, event: MessageEvent) -> None:
-    """处理战斗命令
-    用法：一键战斗 设备号 [账号序号]
-    示例：
-        一键战斗 1          # 启动设备1的所有账号
-        一键战斗 1 2-4      # 启动设备1的2到4号账号
-        一键战斗 1 2 4 6    # 启动设备1的2、4、6号账号
-        一键战斗 1 1-3 5 7  # 启动设备1的1-3号和5、7号账号
-    """
+async def handle_fight(event: MessageEvent) -> None:
+    """处理战斗命令"""
     args = str(event.get_message()).strip().split()
     if len(args) <= 1:
         await fight_handler.finish(
-            "用法：一键战斗 设备号 [账号序号]\n"
+            "用法：/fight <设备号> [账号序号]\n"
             "示例：\n"
-            "  一键战斗 1          # 启动设备1的所有账号\n"
-            "  一键战斗 1 2-4      # 启动设备1的2到4号账号\n"
-            "  一键战斗 1 2 4 6    # 启动设备1的2、4、6号账号\n"
-            "  一键战斗 1 1-3 5 7  # 启动设备1的1-3号和5、7号账号"
+            "  /fight 1          # 启动设备1的所有账号\n"
+            "  /fight 1 2-4      # 启动设备1的2到4号账号\n"
+            "  /fight 1 2 4 6    # 启动设备1的2、4、6号账号\n"
+            "  /fight 1 1-3 5 7  # 启动设备1的1-3号和5、7号账号"
         )
         return
         
@@ -242,14 +228,12 @@ async def handle_fight(bot: Bot, event: MessageEvent) -> None:
         await fight_handler.finish(f"设备 {device} 未启用或不存在")
         return
     
-    # 获取账号参数（如果有），并将所有参数组合成一个字符串
     accounts = " ".join(args[2:]) if len(args) > 2 else None
-        
     success, msg = await AccountManager.start_fight(device, accounts)
     await fight_handler.finish(msg)
 
 @command_handler.handle()
-async def handle_command(bot: Bot, event: MessageEvent) -> None:
+async def handle_command(event: MessageEvent) -> None:
     """处理通用命令"""
     msg = str(event.get_message()).strip()
     cmd = msg[4:].strip()  # 去除"exec"前缀
@@ -264,9 +248,10 @@ async def handle_command(bot: Bot, event: MessageEvent) -> None:
         
         output = result.stdout if result.stdout else result.stderr
         if output:
-            if len(output) > 1000:
-                for i in range(0, len(output), 1000):
-                    await bot.send(event, output[i:i+1000])
+            # Telegram 消息长度限制为 4096 字符
+            if len(output) > 4000:
+                for i in range(0, len(output), 4000):
+                    await command_handler.send(output[i:i+4000])
             else:
                 await command_handler.send(output)
     
@@ -277,19 +262,16 @@ async def handle_command(bot: Bot, event: MessageEvent) -> None:
     await command_handler.finish("执行完成")
 
 @screenshot_handler.handle()
-async def handle_screenshot(bot: Bot, event: MessageEvent) -> None:
-    """处理截图命令
-    用法：获取截图 设备号
-    """
+async def handle_screenshot(event: MessageEvent) -> None:
+    """处理截图命令"""
     args = str(event.get_message()).strip().split()
     if len(args) <= 1:
-        await screenshot_handler.finish("请指定设备编号")
+        await screenshot_handler.finish("用法：/screenshot <设备号>")
         return
         
     device = args[1]
     
     try:
-        # 检查设备是否存在
         devices = await AccountManager.get_devices()
         if int(device) not in devices:
             await screenshot_handler.finish(f"设备 {device} 未启用或不存在")

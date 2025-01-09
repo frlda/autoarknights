@@ -2,14 +2,15 @@ import os
 import traceback
 import asyncio
 from nonebot import on_command, get_bot
-from nonebot.adapters.onebot.v11 import MessageEvent, MessageSegment
+from nonebot.adapters.telegram import Bot
+from nonebot.adapters.telegram.event import MessageEvent
 from nonebot.log import logger
 from nonebot.exception import FinishedException
 from PIL import Image, ImageDraw, ImageFont
 from typing import Tuple
 from pathlib import Path
 
-help_handler = on_command("方舟help", aliases={"help"}, priority=5, block=True)
+help_handler = on_command("help", aliases={"方舟help"}, priority=5, block=True)
 
 class HelpImageGenerator:
     def __init__(self):
@@ -97,13 +98,13 @@ class HelpImageGenerator:
         if is_admin:
             content["sections"].update({
                 "管理员命令": [
-                    "/强制删除账号 QQ号 账号序号 - 强制删除指定QQ的账号",
-                    "/搜索账号 QQ号 - 搜索指定QQ的所有账号",
-                    "/设置设备限制 设备号 限制数量 - 设置设备可绑定的最大账号数",
-                    "/更新所有账号 - 更新所有账号的配置",
-                    "/一键战斗 设备号 - 启动指定设备的战斗",
-                    "/获取设备 - 查看当前启用的设备",
-                    "/获取截图 设备号 - 获取指定设备的状态截图"
+                    "/forcedel <用户ID> <账号序号> - 强制删除指定用户的账号",
+                    "/search <用户ID> - 搜索指定用户的所有账号",
+                    "/devlimit <设备号> <限制数量> - 设置设备可绑定的最大账号数",
+                    "/updateall - 更新所有账号的配置",
+                    "/fight <设备号> - 启动指定设备的战斗",
+                    "/devices - 查看当前启用的设备",
+                    "/screenshot <设备号> - 获取指定设备的状态截图"
                 ]
             })
         
@@ -187,19 +188,21 @@ async def handle_help(event: MessageEvent) -> None:
         image_path = help_generator.get_help_image(is_admin)
         
         if not os.path.exists(image_path):
-            await help_handler.send("生成帮助图片失败，请联系管理员。")
+            await help_handler.finish("生成帮助图片失败，请联系管理员。")
             return
             
-        relative_path = str(Path(image_path).resolve())
-        
+        # 使用 nonebot-adapter-telegram 的方式发送图片
         try:
-            await help_handler.send(MessageSegment.image(file=f"file://{relative_path}"))
-        except Exception as first_error:
-            try:
-                await help_handler.send(MessageSegment.image(file=relative_path))
-            except Exception as second_error:
-                await help_handler.send("图片发送失败，请联系管理员")
-                return
+            with open(image_path, 'rb') as photo:
+                await bot.call_api(
+                    "send_photo",
+                    chat_id=event.chat.id,
+                    photo=photo
+                )
+        except Exception as e:
+            logger.error(f"Failed to send image: {e}")
+            await help_handler.finish("图片发送失败，请联系管理员")
+            return
         
         await asyncio.sleep(1)
         try:
@@ -212,4 +215,4 @@ async def handle_help(event: MessageEvent) -> None:
         pass
     except Exception as e:
         logger.error(f"Error in help command: {e}")
-        await help_handler.send("获取帮助信息失败，请稍后再试。")
+        await help_handler.finish("获取帮助信息失败，请稍后再试。")

@@ -1,14 +1,15 @@
-from nonebot import on_regex
-from nonebot.adapters.onebot.v11 import MessageEvent, MessageSegment
-from nonebot.log import logger
-from sqlmodel import Session, select
-import re
-from datetime import datetime
+from nonebot import logger, get_bot
+from nonebot.adapters.telegram.event import MessageEvent
+from sqlmodel import select
 from PIL import Image, ImageDraw, ImageFont
 import os
 import asyncio
 from pathlib import Path
 from typing import Tuple
+from nonebot import logger, on_command, get_bot
+from nonebot.adapters.telegram import Message
+from nonebot.adapters.telegram.event import MessageEvent
+from nonebot.params import CommandArg
 
 from ..database import get_session, ArkAccount, ArkConfig
 
@@ -230,23 +231,28 @@ class ConfigImageGenerator:
             logger.error(f"Failed to generate config image: {str(e)}")
             raise
 
-ark_config = on_regex(r"^账号配置\s*(\d+)$", priority=5)
+ark_config = on_command("config", aliases={"账号配置"}, priority=5)
 
 @ark_config.handle()
-async def handle_config(event: MessageEvent):
+async def handle_config(event: MessageEvent, args: Message = CommandArg()):
     try:
-        msg = str(event.get_message()).strip()
-        match = re.match(r"^账号配置\s*(\d+)$", msg)
-        if not match:
-            await ark_config.finish("命令格式错误！\n格式：账号配置 序号")
+        # 获取参数
+        arg_str = args.extract_plain_text().strip()
+        
+        if not arg_str.isdigit():
+            await ark_config.finish(
+                "命令格式错误！\n"
+                "格式：/config <序号> 或 /账号配置 <序号>"
+            )
             return
 
-        account_index = int(match.group(1))
+        account_index = int(arg_str)
+        user_id = str(event.get_user_id())  # 使用 Telegram 的用户 ID
         
         with get_session() as session:
             account = session.exec(
                 select(ArkAccount).where(
-                    ArkAccount.qq == str(event.user_id),
+                    ArkAccount.user_id == user_id,
                     ArkAccount.account_index == account_index
                 )
             ).first()
@@ -273,17 +279,22 @@ async def handle_config(event: MessageEvent):
                 await ark_config.finish("生成配置图片失败，请联系管理员")
                 return
 
-            relative_path = str(Path(image_path).resolve())
-            
+            # 发送图片
             try:
-                await ark_config.send(MessageSegment.image(file=f"file://{relative_path}"))
-            except Exception as first_error:
-                try:
-                    await ark_config.send(MessageSegment.image(file=relative_path))
-                except Exception as second_error:
-                    await ark_config.send("图片发送失败，请检查文件权限或联系管理员")
-                    return
+                bot = get_bot()
+                chat_id = event.chat.id
+                with open(image_path, 'rb') as photo:
+                    await bot.send_photo(
+                        chat_id=chat_id,
+                        photo=photo,
+                        caption=f"账号 #{account_index} 的配置信息"
+                    )
+            except Exception as e:
+                logger.error(f"Failed to send image: {e}")
+                await ark_config.finish(f"图片发送失败：{str(e)}")
+                return
 
+            # 清理缓存文件
             await asyncio.sleep(1)
             try:
                 if os.path.exists(image_path):

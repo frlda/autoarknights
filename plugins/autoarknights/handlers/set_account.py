@@ -1,8 +1,8 @@
+import re
 from nonebot import on_regex
-from nonebot.adapters.onebot.v11 import MessageEvent
+from nonebot.adapters.telegram.event import MessageEvent
 from nonebot.log import logger
 from sqlmodel import Session, select
-import re
 from datetime import datetime
 from ..database import get_session, ArkAccount, ArkConfig, ArkConfigHistory
 
@@ -51,7 +51,7 @@ SHOP_CONFIG_ITEMS = {
 
 VALID_SHOP_ITEMS = [u"聘", u"土", u"装置", u"技", u"碳", u"家", u"急"]
 
-ark_setting = on_regex(r"^账号设置\s*(\d+)\s+(.+?)(?:\s+(.+))?$", priority=5)
+ark_setting = on_regex(r"^/账号配置\s*(\d+)\s+(.+?)(?:\s+(.+))?$", priority=5)
 
 def get_default_task_config() -> dict:
     return {
@@ -88,7 +88,6 @@ def get_default_shop_config() -> dict:
         "low_priority": u"碳 家 急"
     }
 
-
 def update_task_config(config: ArkConfig, key: str, value: bool) -> tuple[bool, bool]:
     if config.task_config is None:
         task_config = get_default_task_config()
@@ -112,15 +111,12 @@ def update_recruit_config(config: ArkConfig, key: str, value: bool) -> tuple[boo
 def validate_shop_items(items_str: str, config: ArkConfig, current_key: str) -> bool:
     items = items_str.split()
     
-    # 验证项目是否有效
     if not all(item in VALID_SHOP_ITEMS for item in items):
         raise ValueError("无效的商品项，只能包含：聘、土、装置、技、碳、家、急")
     
-    # 检查是否有重复项
     if len(items) != len(set(items)):
         raise ValueError("商品项不能重复")
     
-    # 检查与另一个优先级是否有重复
     other_key = "low_priority" if current_key == "high_priority" else "high_priority"
     if config.shop_config and other_key in config.shop_config:
         other_items = config.shop_config[other_key].split()
@@ -146,9 +142,15 @@ def update_shop_config(config: ArkConfig, key: str, value: str) -> tuple[str, st
 async def handle_setting(event: MessageEvent):
     try:
         msg = str(event.get_message()).strip()
-        match = re.match(r"^账号设置\s*(\d+)\s+(.+?)(?:\s+(.+))?$", msg)
+        match = re.match(r"^/set\s*(\d+)\s+(.+?)(?:\s+(.+))?$", msg)
         if not match:
-            await ark_setting.finish("命令格式错误！\n格式：账号设置 序号 配置项 [值]")
+            await ark_setting.finish(
+                "命令格式错误！\n"
+                "格式：/set <序号> <配置项> [值]\n"
+                "示例：\n"
+                "/set 1 作战关卡 1-7\n"
+                "/set 1 邮件收取 关闭"
+            )
             return
 
         account_index = int(match.group(1))
@@ -162,7 +164,7 @@ async def handle_setting(event: MessageEvent):
         with get_session() as session:
             account = session.exec(
                 select(ArkAccount).where(
-                    ArkAccount.qq == str(event.user_id),
+                    ArkAccount.user_id == str(event.get_user_id()),
                     ArkAccount.account_index == account_index
                 )
             ).first()
@@ -241,7 +243,7 @@ async def handle_setting(event: MessageEvent):
 
                 history = ArkConfigHistory(
                     username=account.username,
-                    modified_by=str(event.user_id),
+                    modified_by=str(event.get_user_id()),
                     config_type=config_name,
                     old_value={"value": str(old_value)},
                     new_value={"value": str(new_value)}
@@ -262,8 +264,8 @@ async def handle_setting(event: MessageEvent):
             except Exception as e:
                 session.rollback()
                 logger.error(f"Database error: {e}")
-                await ark_setting.send(f"保存配置失败：{str(e)}")
+                await ark_setting.finish(f"保存配置失败：{str(e)}")
 
     except Exception as e:
         logger.error(f"Error in handle_setting: {e}")
-        await ark_setting.send(f"设置失败：{str(e)}")
+        await ark_setting.finish(f"设置失败：{str(e)}")

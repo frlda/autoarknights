@@ -11,7 +11,7 @@ SERVER_TYPES: Dict[str, str] = {
 
 # 设备数量配置，请在cron/dlt.py下配置好排序和设备adb连接
 MIN_DEVICE = 1
-MAX_DEVICE = 9
+MAX_DEVICE = 3
 DEFAULT_DEVICE_LIMIT = 8 
 device_limits: Dict[int, int] = {i: DEFAULT_DEVICE_LIMIT for i in range(MIN_DEVICE, MAX_DEVICE + 1)}
 
@@ -26,7 +26,7 @@ DEFAULT_DAYS = 32  # 默认充值天数
 SCREENSHOT_CONFIG: Dict[str, Any] = {
     "enable": True,  # 是否启用图传功能
     "server_url": "http://127.0.0.1:8888",  # 图传服务器地址
-    "target_groups": ["894907414"],  # 目标群组列表
+    "target_groups": ["g-4687819227"],  # 目标群组列表
     "message_template": "设备状态截图 {device} \n时间: {time}"  # 消息模板
 }
 

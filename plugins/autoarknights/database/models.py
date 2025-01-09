@@ -7,17 +7,17 @@ class ArkAccount(SQLModel, table=True):
     __table_args__ = {'keep_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    qq: str = Field(index=True, title='QQ号')
+    user_id: str = Field(index=True, title='用户ID')  # 改为通用的user_id
     username: str = Field(title='游戏账号')
     password: str = Field(title='账号密码')
     server: str = Field(title='服务器类型', description='官服=official, B服=bilibili')
-    device: Optional[int] = Field(default=None, title='设备号')  # 新增设备号字段
+    device: Optional[int] = Field(default=None, title='设备号')
     account_index: int = Field(title='账号序号')
     created_at: datetime = Field(default_factory=datetime.now, title='创建时间')
     updated_at: datetime = Field(default_factory=datetime.now, title='更新时间')
     is_frozen: bool = Field(default=False, title='是否冻结')
     temp_password: Optional[str] = Field(default=None, title='临时保存的密码')
-    left_days: int = Field(default=32, title='剩余天数')  # 新增剩余天数字段
+    left_days: int = Field(default=32, title='剩余天数')
     freeze_reason: Optional[str] = Field(default=None, title='冻结原因')
 
 class ArkConfig(SQLModel, table=True):

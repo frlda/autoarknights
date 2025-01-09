@@ -4,7 +4,7 @@ from .image_deliver import *
 
 __plugin_meta__ = PluginMetadata(
     name="autoarknights",
-    description="明日方舟账号管理插件",
+    description="明日方舟速通管理插件",
     usage="""
     账号管理:
     - 绑定游戏账号 [账号] [密码] [服务器]

@@ -4,7 +4,7 @@ pydantic==1.10.14
 quart==0.19.8
 Requests==2.32.3
 sqlmodel==0.0.22
-
+httpx>=0.24.0,<0.25.0
 nonebot2>=2.2.0
 nonebot-adapter-onebot>=2.4.0
 nb-cli>=1.0.0
@@ -17,3 +17,4 @@ nonebot2[websockets]
 sqlmodel-0.0.22
 quart
 nonebot-plugin-orm[default]
+fire
