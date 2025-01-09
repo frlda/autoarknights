@@ -18,12 +18,12 @@ async def handle_bind_device(event: MessageEvent, args: Message = CommandArg()):
     try:
         args_text = args.extract_plain_text().strip()
         if not args_text:
-            await bind_device.finish("请提供账号序号和设备号！\n格式：/bind_device <账号序号> <设备号>")
+            await bind_device.finish("请提供账号序号和设备号！\n格式：/绑定设备 <账号序号> <设备号>")
             return
 
         args_list = args_text.split()
         if len(args_list) != 2:
-            await bind_device.finish("参数格式错误！\n格式：/bind_device <账号序号> <设备号>")
+            await bind_device.finish("参数格式错误！\n格式：/绑定设备 <账号序号> <设备号>")
             return
             
         try:
@@ -58,7 +58,7 @@ async def handle_unbind_device(event: MessageEvent, args: Message = CommandArg()
     try:
         args_text = args.extract_plain_text().strip()
         if not args_text:
-            await unbind_device.finish("请提供账号序号！\n格式：/unbind_device <账号序号>")
+            await unbind_device.finish("请提供账号序号！\n格式：/解绑设备 <账号序号>")
             return
 
         try:

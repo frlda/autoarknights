@@ -51,7 +51,7 @@ SHOP_CONFIG_ITEMS = {
 
 VALID_SHOP_ITEMS = [u"聘", u"土", u"装置", u"技", u"碳", u"家", u"急"]
 
-ark_setting = on_regex(r"^/账号配置\s*(\d+)\s+(.+?)(?:\s+(.+))?$", priority=5)
+ark_setting = on_regex(r"^/账号设置\s*(\d+)\s+(.+?)(?:\s+(.+))?$", priority=5)
 
 def get_default_task_config() -> dict:
     return {

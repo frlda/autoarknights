@@ -213,7 +213,7 @@ async def handle_fight(event: MessageEvent) -> None:
     args = str(event.get_message()).strip().split()
     if len(args) <= 1:
         await fight_handler.finish(
-            "用法：/fight <设备号> [账号序号]\n"
+            "用法：/一键战斗 <设备号> [账号序号]\n"
             "示例：\n"
             "  /fight 1          # 启动设备1的所有账号\n"
             "  /fight 1 2-4      # 启动设备1的2到4号账号\n"

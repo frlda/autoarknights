@@ -25,12 +25,12 @@ async def handle_bind(event: MessageEvent, args: Message = CommandArg()):
     try:
         args_text = args.extract_plain_text().strip()
         if not args_text:
-            await bind_account.finish("请提供账号信息！\n格式：/bind 账号 密码 服务器(官服/b服)")
+            await bind_account.finish("请提供账号信息！\n格式：/绑定游戏账号 账号 密码 服务器(官服/b服)")
             return
 
         args_list = args_text.split()
         if len(args_list) != 3:
-            await bind_account.finish("参数格式错误！\n格式：/bind 账号 密码 服务器(官服/b服)")
+            await bind_account.finish("参数格式错误！\n格式：/绑定游戏账号 账号 密码 服务器(官服/b服)")
             return
             
         username, password, server = args_list
@@ -81,7 +81,7 @@ async def handle_bind(event: MessageEvent, args: Message = CommandArg()):
 2. 剩余2天时会收到提醒
 3. 过期后账号将被冻结
 4. 请记住账号序号：{account.account_index}
-5. 可使用 /账号配置 命令修改配置"""
+5. 可使用 /账号设置 命令修改配置"""
 
         logger.info(f"User {user_id} bound new account {username} with default config")
         await bind_account.finish(msg, parse_mode="Markdown")
@@ -104,7 +104,7 @@ async def handle_delete(event: MessageEvent, args: Message = CommandArg()):
         target_id = args.extract_plain_text().strip()
         if not target_id:
             await delete_account.finish("请提供要删除的账号信息！\n" + 
-                                    ("管理员格式：/unbind 账号ID\n" if is_admin else "格式：/unbind 账号序号"))
+                                    ("管理员格式：/删除游戏账号 账号ID\n" if is_admin else "格式：/unbind 账号序号"))
             return
             
         try:
@@ -186,7 +186,7 @@ async def handle_modify_account(event: MessageEvent, args: Message = CommandArg(
         if not args_text:
             await modify_account.finish(
                 "请提供修改信息！\n"
-                "格式：/modify 账号序号 新账号名 新密码 服务器(官服/b服)\n"
+                "格式：/修改账号信息 账号序号 新账号名 新密码 服务器(官服/b服)\n"
                 "注意：如果不需要修改某项，请用'-'代替"
             )
             return
@@ -195,7 +195,7 @@ async def handle_modify_account(event: MessageEvent, args: Message = CommandArg(
         if len(args_list) != 4:
             await modify_account.finish(
                 "参数格式错误！\n"
-                "格式：/modify 账号序号 新账号名 新密码 服务器(官服/b服)\n"
+                "格式：/修改账号信息 账号序号 新账号名 新密码 服务器(官服/b服)\n"
                 "注意：如果不需要修改某项，请用'-'代替"
             )
             return
@@ -253,7 +253,7 @@ async def handle_admin_search(event: MessageEvent, args: Message = CommandArg())
     try:
         user_id = args.extract_plain_text().strip()
         if not user_id:
-            await admin_search.finish("请提供要查询的用户ID！\n格式：/search 用户ID")
+            await admin_search.finish("请提供要查询的用户ID！\n格式：/搜索账号 用户ID")
             return
 
         accounts = AccountManager.search_accounts(user_id)
