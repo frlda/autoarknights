@@ -76,11 +76,12 @@ async def handle_bind(event: MessageEvent, args: Message = CommandArg()):
 - 商店优先级：已设置默认值
 
 请注意：
+0.先绑定设备序号，并且保证你的设备adb能正常调用
 1. 账号有效期为{account.left_days}天
 2. 剩余2天时会收到提醒
 3. 过期后账号将被冻结
 4. 请记住账号序号：{account.account_index}
-5. 可使用 /settings 命令修改配置"""
+5. 可使用 /账号配置 命令修改配置"""
 
         logger.info(f"User {user_id} bound new account {username} with default config")
         await bind_account.finish(msg, parse_mode="Markdown")
