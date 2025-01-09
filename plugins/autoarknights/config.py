@@ -20,7 +20,7 @@ arknight_update_times: Set[str] = {"04:00", "12:00", "20:00"}
 
 # 账号计费配置
 WARNING_DAYS = 2  # 提醒剩余天数
-DEFAULT_DAYS = 32  # 默认充值天数
+DEFAULT_DAYS = 999  # 默认充值天数
 
 # 图传配置
 SCREENSHOT_CONFIG: Dict[str, Any] = {
